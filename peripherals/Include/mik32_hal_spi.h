@@ -246,6 +246,7 @@ void HAL_SPI_ClearRXFIFO(SPI_HandleTypeDef *hspi);
 void HAL_SPI_ClearError(SPI_HandleTypeDef *hspi);
 void HAL_SPI_CS_Enable(SPI_HandleTypeDef *hspi, uint32_t CS_M);
 void HAL_SPI_CS_Disable(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t TransmitBytes[], uint32_t Size, uint32_t Timeout);
 HAL_StatusTypeDef HAL_SPI_Exchange(SPI_HandleTypeDef *hspi, uint8_t TransmitBytes[], uint8_t ReceiveBytes[], uint32_t Size, uint32_t Timeout);
 HAL_StatusTypeDef HAL_SPI_Exchange_IT(SPI_HandleTypeDef *hspi, uint8_t TransmitBytes[], uint8_t ReceiveBytes[], uint32_t Size);
 

@@ -367,6 +367,71 @@ void HAL_SPI_CS_Disable(SPI_HandleTypeDef *hspi)
 }
 
 /**
+ * @brief Запустить передачу данных.
+ * 
+ * Байты поочередно передаются.
+ * @param hspi указатель на структуру SPI_HandleTypeDef, которая содержит
+ *                  информацию о конфигурации для модуля SPI.
+ * @param TransmitBytes указатель на буфер передаваемых данных.
+ * @param DataSize число байт для отправки.
+ * @param Timeout продолжительность тайм-аута.
+ * @return Статус HAL.
+ * 
+ * @note Во время передачи пороговое значение ThresholdTX = 1.
+ * @warning Если Вы управляете сигналом выбора ведомого в ручном режиме или используете для этого GPIO, 
+ *          SPI следует включать до того, как уровень сигнала CS станет активным. Для включения SPI можно 
+ *          использовать макрос __HAL_SPI_ENABLE.
+ */
+HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t TransmitBytes[], uint32_t DataSize, uint32_t Timeout)
+{
+    HAL_StatusTypeDef error_code = HAL_OK;
+    uint32_t timeout_counter = 0;
+    
+
+    hspi->ErrorCode = HAL_SPI_ERROR_NONE;
+    hspi->pTxBuffPtr = (uint8_t *)TransmitBytes;
+    hspi->TxCount = DataSize;
+
+    hspi->Instance->TX_THR = 1;
+
+    /* Включить SPI если выключено */
+    if (!(hspi->Instance->ENABLE & SPI_ENABLE_M))
+    {
+        __HAL_SPI_ENABLE(hspi);
+    }
+
+    while ((hspi->TxCount > 0))
+    {
+        /* Проверка флага TX_FIFO_NOT_FULL */
+        if ((hspi->Instance->INT_STATUS & SPI_INT_STATUS_TX_FIFO_NOT_FULL_M) && (hspi->TxCount > 0))
+        {
+            hspi->Instance->TXDATA = *(hspi->pTxBuffPtr);
+            hspi->pTxBuffPtr++;
+            hspi->TxCount--;
+        }
+
+        if (((timeout_counter++) >= Timeout) || (Timeout == 0U))
+        {
+            error_code = HAL_TIMEOUT;
+            goto error;
+        }
+    }
+
+error:
+    if (!(hspi->Instance->CONFIG & SPI_CONFIG_MANUAL_CS_M))
+    {
+        __HAL_SPI_DISABLE(hspi);
+        hspi->Instance->ENABLE |= SPI_ENABLE_CLEAR_TX_FIFO_M; /* Очистка буферов TX */
+    }
+
+    volatile uint32_t unused = hspi->Instance->INT_STATUS; /* Очистка флагов ошибок чтением */
+    (void) unused;
+
+
+    return error_code;
+}
+
+/**
  * @brief Запустить передачу и прием данных.
  * 
  * Байты поочередно передаются и считываются по одному байту.
