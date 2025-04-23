@@ -93,8 +93,6 @@ static void GPIO_Init(HAL_SSD1306_InitTypeDef *ssd1306_init)
  */
 static void ssd1306_Reset(HAL_SSD1306_InitTypeDef *ssd1306_init) {
     GPIO_Init(ssd1306_init);
-    // CS = High (not selected)
-    HAL_SPI_CS_Disable(ssd1306_init->Spi);
 
     // Reset the OLED
     HAL_GPIO_WritePin(ssd1306_init->SSD1306_Reset_Port, ssd1306_init->SSD1306_Reset_Pin, GPIO_PIN_LOW);
