@@ -90,6 +90,16 @@ typedef struct __HAL_SSD1306_InitTypeDef
     HAL_PinsTypeDef SSD1306_Reset_Pin;
 
     /**
+     * @brief CS port.
+     */
+    GPIO_TypeDef *SSD1306_CS_Port;
+
+    /**
+     * @brief CS pin.
+     */
+    HAL_PinsTypeDef SSD1306_CS_Pin;
+
+    /**
      * @brief Pointer to the I2C_HandleTypeDef structure if the I2C interface is selected.
      */
     I2C_HandleTypeDef *I2c;
