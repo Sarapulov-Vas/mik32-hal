@@ -25,13 +25,16 @@ static HAL_StatusTypeDef transmit(HAL_SSD1306_InitTypeDef *ssd1306_init, uint8_t
     }
     else if (ssd1306_init->Interface == HAL_SPI)
     {
+        HAL_StatusTypeDef status = HAL_OK;
         if (buffer[0] == DATS)
         {
+            HAL_GPIO_WritePin(ssd1306_init->SSD1306_CS_Port, ssd1306_init->SSD1306_CS_Pin, GPIO_PIN_LOW);
             HAL_GPIO_WritePin(ssd1306_init->SSD1306_DC_Port, ssd1306_init->SSD1306_DC_Pin, GPIO_PIN_HIGH); // data
-            return HAL_SPI_Transmit(ssd1306_init->Spi, buffer + 1, buff_size - 1, SPI_TIMEOUT_DEFAULT);
+            status =  HAL_SPI_Transmit(ssd1306_init->Spi, buffer + 1, buff_size - 1, SPI_TIMEOUT_DEFAULT);
+            HAL_GPIO_WritePin(ssd1306_init->SSD1306_CS_Port, ssd1306_init->SSD1306_CS_Pin, GPIO_PIN_LOW);
+            return status;
         }
 
-        HAL_StatusTypeDef status = HAL_OK;
         for (int i = 0; i < buff_size; i+=2)
         {
             if (buffer[i] == DAT)
@@ -42,8 +45,9 @@ static HAL_StatusTypeDef transmit(HAL_SSD1306_InitTypeDef *ssd1306_init, uint8_t
             {
                 HAL_GPIO_WritePin(ssd1306_init->SSD1306_DC_Port, ssd1306_init->SSD1306_DC_Pin, GPIO_PIN_LOW); // command
             }
-
-            status = HAL_SPI_Transmit(ssd1306_init->Spi, (uint8_t *) &buffer[i + 1], 1, SPI_TIMEOUT_DEFAULT);            
+            HAL_GPIO_WritePin(ssd1306_init->SSD1306_CS_Port, ssd1306_init->SSD1306_CS_Pin, GPIO_PIN_LOW);
+            status = HAL_SPI_Transmit(ssd1306_init->Spi, (uint8_t *) &buffer[i + 1], 1, SPI_TIMEOUT_DEFAULT);    
+            HAL_GPIO_WritePin(ssd1306_init->SSD1306_CS_Port, ssd1306_init->SSD1306_CS_Pin, GPIO_PIN_HIGH);        
             if (status != HAL_OK)
             {
                 return status;
@@ -66,23 +70,23 @@ static HAL_StatusTypeDef transmit(HAL_SSD1306_InitTypeDef *ssd1306_init, uint8_t
  */
 static void GPIO_Init(HAL_SSD1306_InitTypeDef *ssd1306_init)
 {
-    GPIO_InitTypeDef GPIO_InitStruct_DC = {0};
-    GPIO_InitTypeDef GPIO_InitStruct_Reset = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     __HAL_PCC_GPIO_0_CLK_ENABLE();
     __HAL_PCC_GPIO_1_CLK_ENABLE();
     __HAL_PCC_GPIO_2_CLK_ENABLE();
     __HAL_PCC_GPIO_IRQ_CLK_ENABLE();
 
-    GPIO_InitStruct_DC.Pin = ssd1306_init->SSD1306_DC_Pin;
-    GPIO_InitStruct_DC.Mode = HAL_GPIO_MODE_GPIO_OUTPUT;
-    GPIO_InitStruct_DC.Pull = HAL_GPIO_PULL_NONE;
-    HAL_GPIO_Init(ssd1306_init->SSD1306_DC_Port, &GPIO_InitStruct_DC);
+    GPIO_InitStruct.Pin = ssd1306_init->SSD1306_DC_Pin;
+    GPIO_InitStruct.Mode = HAL_GPIO_MODE_GPIO_OUTPUT;
+    GPIO_InitStruct.Pull = HAL_GPIO_PULL_NONE;
+    HAL_GPIO_Init(ssd1306_init->SSD1306_DC_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct_Reset.Pin = ssd1306_init->SSD1306_Reset_Pin;
-    GPIO_InitStruct_Reset.Mode = HAL_GPIO_MODE_GPIO_OUTPUT;
-    GPIO_InitStruct_Reset.Pull = HAL_GPIO_PULL_NONE;
-    HAL_GPIO_Init(ssd1306_init->SSD1306_Reset_Port, &GPIO_InitStruct_Reset);
+    GPIO_InitStruct.Pin = ssd1306_init->SSD1306_Reset_Pin;
+    HAL_GPIO_Init(ssd1306_init->SSD1306_Reset_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = ssd1306_init->SSD1306_CS_Pin;
+    HAL_GPIO_Init(ssd1306_init->SSD1306_CS_Port, &GPIO_InitStruct);
 }
 
 /**
@@ -93,8 +97,7 @@ static void GPIO_Init(HAL_SSD1306_InitTypeDef *ssd1306_init)
  */
 static void ssd1306_Reset(HAL_SSD1306_InitTypeDef *ssd1306_init) {
     GPIO_Init(ssd1306_init);
-
-    // Reset the OLED
+    HAL_GPIO_WritePin(ssd1306_init->SSD1306_CS_Port, ssd1306_init->SSD1306_CS_Pin, GPIO_PIN_HIGH);
     HAL_GPIO_WritePin(ssd1306_init->SSD1306_Reset_Port, ssd1306_init->SSD1306_Reset_Pin, GPIO_PIN_LOW);
     HAL_DelayMs(10);
     HAL_GPIO_WritePin(ssd1306_init->SSD1306_Reset_Port, ssd1306_init->SSD1306_Reset_Pin, GPIO_PIN_HIGH);
